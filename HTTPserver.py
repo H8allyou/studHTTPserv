@@ -15,7 +15,7 @@ class Response:
         self.body = body
 
 class Request:
-    def __init__(self, method, target, ver, headers, rfile):
+    def __init__(self, method, target, ver, headers, rfile,):
         self.method = method
         self.target = target
         self.ver = ver
@@ -53,7 +53,6 @@ class HTTPserver:
                 conn, _ = serv_sock.accept()
                 try:
                     self.server_client(conn)
-                    print(conn)
                 except Exception as e:
                     print('Client serving failed', e)
         finally: serv_sock.close()
@@ -76,23 +75,22 @@ class HTTPserver:
         headers = self.parse_req_headers(rfile)
         host = headers.get('Host')
         if not host:
-            raise Exception('Bad request')
+            raise HTTPError(400, 'Bad request')
         if host not in (self._server_name, f'{self._server_name}:{self._port}'):
-            raise Exception('Not found')
+            raise HTTPError(404, 'Not found')
         return Request(method, target, ver, headers, rfile)
 
     def parse_req_line(self, rfile):
         raw = rfile.readline(max_line + 1)
         if len(raw) > max_line:
-            raise Exception('Request line is to long')
+            raise HTTPError(400, 'Bad request', 'Request line is to long')
         req_line = str(raw, 'iso-8859-1')
-        req_line = req_line.rstrip('\r\n')
         words = req_line.split()
         if len(words) != 3:
-            raise Exception('Malformed request line')
+            raise HTTPError(400, 'Bad request', 'Malformed request line')
         method, target, ver = words
         if ver != 'HTTP/1.1':
-            raise Exception('Unexpected HTTP version')
+            raise HTTPError(505, 'HTTP Version Not Supported')
         return method, target, ver
 
     def parse_req_headers(self, rfile):
@@ -100,12 +98,12 @@ class HTTPserver:
         while True:
             line = rfile.readfile(max_line + 1)
             if len(line) > max_line:
-                raise Exception('Headers line is to long')
+                raise HTTPError(494, 'Headers line is to long')
             if line in (b'\r\n', b'\n', b''):
                 break
             headers.append(line)
             if len(headers) > max_header:
-                raise Exception('Too many headers')
+                raise HTTPError(494, 'Too many headers')
             sheader = b''.join(headers).decode('iso-8859-1')
             return Parser().parsestr(sheader)
 
@@ -114,7 +112,7 @@ class HTTPserver:
             return self.handle_get_main(req)
         if req.target == '/blog' and req.method == 'GET':
             return self.handle_get_blog(req)
-        raise Exception('Not found')
+        raise HTTPError(404, 'Not found')
 
     def handle_get_main(self, req):
         accept = req.headers.get('Accept')
