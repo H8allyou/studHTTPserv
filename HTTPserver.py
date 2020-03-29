@@ -4,8 +4,8 @@ from functools import lru_cache
 from urllib.parse import parse_qs, urlparse
 
 max_line = 64*1024
-max_header = 100
 
+max_header = 100
 
 class Response:
     def __init__(self, status, reason, headers=None, body=None):
