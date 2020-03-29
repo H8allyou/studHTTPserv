@@ -76,7 +76,7 @@ class HTTPserver:
         host = headers.get('Host')
         if not host:
             raise HTTPError(400, 'Bad request')
-        if host not in (self._server_name, f'{self._server_name}:{self._port}'):
+        if host not in (self._server_name, f'{self._host}:{self._port}'):
             raise HTTPError(404, 'Not found')
         return Request(method, target, ver, headers, rfile)
 
@@ -96,7 +96,7 @@ class HTTPserver:
     def parse_req_headers(self, rfile):
         headers = []
         while True:
-            line = rfile.readfile(max_line + 1)
+            line = rfile.readline(max_line + 1)
             if len(line) > max_line:
                 raise HTTPError(494, 'Headers line is to long')
             if line in (b'\r\n', b'\n', b''):
@@ -115,28 +115,20 @@ class HTTPserver:
         raise HTTPError(404, 'Not found')
 
     def handle_get_main(self, req):
-        accept = req.headers.get('Accept')
-        if 'text/html' in accept:
-            ContentType = 'text/html; charset=utf-8'
-            body = '<html><head></head><body>'
-            body += '<h1>Главная страница</h1>'
-            body += '</body></html>'
-        else:
-            return Response(406, 'Not Acceptable')
+        ContentType = 'text/html; charset=utf-8'
+        body = '<html><head></head><body>'
+        body += '<h1>Главная страница</h1>'
+        body += '</body></html>'
         body = body.encode('utf-8')
         headers = [('Content-Type', ContentType),
                     ('Content-Length', len(body))]
         return Response(200, 'OK', headers, body)
 
     def handle_get_blog(self, req):
-        accept = req.headers.get('Accept')
-        if 'text/html' in accept:
-            ContentType = 'text/html; charset=utf-8'
-            body = '<html><head></head><body>'
-            body += '<h1>Блог</h1>'
-            body += '</body></html>'
-        else:
-            return Response(406, 'Not Acceptable')
+        ContentType = 'text/html; charset=utf-8'
+        body = '<html><head></head><body>'
+        body += '<h1>Блог</h1>'
+        body += '</body></html>'
         body = body.encode('utf-8')
         headers = [('Content-Type', ContentType),
                     ('Content-Length', len(body))]
